@@ -1,6 +1,7 @@
 const WhatsAppHelper = require('../helpers/whatsapp.helper');
 const { createResponse } = require('../helpers/response.helper');
 const {getUserChats, saveChat} = require('../helpers/database.helper');
+const Functions = require('../helpers/functions.helper');
 
 const getChats = async (req, res) => {
     const { jid, limit } = req.body;
@@ -22,7 +23,9 @@ const sendMessage = async (req, res) => {
     }
     try {
         const response = await WhatsAppHelper.sendMessage(jid, message);
-        const sender = await WhatsAppHelper.getJid();
+        const userJid  = await WhatsAppHelper.getJid()
+        const sender   = Functions.cleanJid(userJid);
+
         chatPayload = {
             msgId: response.key.id,
             from: sender,

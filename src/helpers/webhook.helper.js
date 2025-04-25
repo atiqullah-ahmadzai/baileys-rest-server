@@ -2,6 +2,7 @@ const axios = require('axios');
 const { saveChat, saveUserOnce, saveUser, getUser } = require('./database.helper');
 const WhatsAppHelper = require('./whatsapp.helper');
 const { downloadAndSaveProfilePicture } = require('./data.helper');
+const Functions = require('./functions.helper');
 
 const handleMessage = async (data) => {
     const { messages, type } = data;
@@ -9,8 +10,10 @@ const handleMessage = async (data) => {
     const msg  = messages[0];
     if (!msg.message || msg.key.fromMe) return; // Skip messages sent by self
     
-    const from      = msg.key.remoteJid;
-    const isGroup   = _isGroup(from);
+
+    const isGroup   = _isGroup(msg.key.remoteJid);
+    const from      = isGroup ? msg.key.participant : msg.key.remoteJid;
+    const to        = isGroup ? msg.key.remoteJid : Functions.cleanJid(await WhatsAppHelper.getJid());
     const sender    = isGroup ? msg.key.participant : msg.key.remoteJid;
     const timestamp = convertToTimeStamp(msg.messageTimestamp);
     const msgId     = msg.key.id;
@@ -22,11 +25,12 @@ const handleMessage = async (data) => {
     
     // Prepare data to send
     const chatMessage = {
-        msgId,
-        from,
-        sender,
-        isGroup,
-        timestamp,
+        msgId: msgId,
+        from:from,
+        to:to,
+        sender:sender,
+        isGroup:isGroup,
+        timestamp:timestamp,
         sent: false,
         type: messageType,
         message: content

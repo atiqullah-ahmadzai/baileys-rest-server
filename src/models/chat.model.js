@@ -11,6 +11,10 @@ const chatSchema = new Schema({
         type: String,
         required: true
     },
+    to: {
+        type: String,
+        required: true
+    },
     sender: {
         type: String,
         required: true

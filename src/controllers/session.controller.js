@@ -15,8 +15,24 @@ const startConnection = async (req, res) => {
 
 const getQrCode = async (req, res) => {
 	try {
+		const image = req.query.image;
+		if (WhatsAppHelper.isConnected) {
+			return createResponse(res, 200, 'WhatsApp connection is already active', false);
+		}
 		const qr = await WhatsAppHelper.getQR();
-		return createResponse(res, 200, 'QR code retrieved successfully', qr);
+		if (image) {
+			// return convert base64 to image and directly return without saving it
+			const base64Data = qr.split(',')[1];
+			const buffer = Buffer.from(base64Data, 'base64');
+			res.setHeader('Content-Type', 'image/png');
+			res.setHeader('Content-Length', buffer.length);
+			res.send(buffer);
+			return;
+		}
+		else
+		{
+			return createResponse(res, 200, 'QR code retrieved successfully', qr);
+		}
 	} catch (error) {
 		return createResponse(res, 500, 'Failed to get QR code', error.message);
 	}
