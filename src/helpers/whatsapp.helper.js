@@ -1,6 +1,6 @@
 // whatsapp.helper.js
 
-const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require("@whiskeysockets/baileys");
+const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, downloadContentFromMessage } = require("@whiskeysockets/baileys");
 const qrcode = require("qrcode");
 
 class BayleysClass {
@@ -173,6 +173,20 @@ class BayleysClass {
             await this.initialize();
         }
         return this.sock.user.id;
+    }
+    async downloadMedia(msg, type) {
+        try {
+            const messageType = type + 'Message'; // e.g., 'imageMessage'
+            const stream = await downloadContentFromMessage(msg.message[messageType], type);
+            let buffer = Buffer.from([]);
+            for await (const chunk of stream) {
+                buffer = Buffer.concat([buffer, chunk]);
+            }
+            return buffer;
+        } catch (err) {
+            console.error('Failed to download media:', err);
+            return null;
+        }
     }
 
     

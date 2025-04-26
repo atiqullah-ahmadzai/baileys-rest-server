@@ -5,19 +5,23 @@ const chatSchema = new Schema({
     msgId: {
         type: String,
         required: true,
-        unique: true
+        unique: true,
+        index: true
     },
     from: {
         type: String,
-        required: true
+        required: true,
+        index: true
     },
     to: {
         type: String,
-        required: true
+        required: true,
+        index: true
     },
     sender: {
         type: String,
-        required: true
+        required: true,
+        index: true
     },
     sent: {
         type: Boolean,
@@ -36,7 +40,7 @@ const chatSchema = new Schema({
         required: true
     },
     message: {
-        type: String,
+        type: Object,
         required: true
     }
 }, {

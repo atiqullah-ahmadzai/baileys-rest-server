@@ -5,7 +5,8 @@ const userSchema = new Schema({
     jid: {
         type: String,
         required: true,
-        unique: true
+        unique: true,
+        index: true
     },
     name: {
         type: String,

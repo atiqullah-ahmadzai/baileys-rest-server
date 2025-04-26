@@ -2,105 +2,70 @@ const axios = require('axios');
 const { saveChat, saveUserOnce, saveUser, getUser } = require('./database.helper');
 const WhatsAppHelper = require('./whatsapp.helper');
 const { downloadAndSaveProfilePicture } = require('./data.helper');
-const Functions = require('./functions.helper');
+const Utils = require('./utils.helper');
 
 const handleMessage = async (data) => {
+    //console.dir(data, { depth: null });
     const { messages, type } = data;
     if (!messages || type !== "notify") return;
     const msg  = messages[0];
     if (!msg.message || msg.key.fromMe) return; // Skip messages sent by self
     
 
-    const isGroup   = _isGroup(msg.key.remoteJid);
+    const isGroup   = Utils.isGroup(msg.key.remoteJid);
     const from      = isGroup ? msg.key.participant : msg.key.remoteJid;
-    const to        = isGroup ? msg.key.remoteJid : Functions.cleanJid(await WhatsAppHelper.getJid());
+    const to        = isGroup ? msg.key.remoteJid : Utils.cleanJid(await WhatsAppHelper.getJid());
     const sender    = isGroup ? msg.key.participant : msg.key.remoteJid;
-    const timestamp = convertToTimeStamp(msg.messageTimestamp);
+    const timestamp = Utils.convertToTimeStamp(msg.messageTimestamp);
     const msgId     = msg.key.id;
     
     const messageContent = msg.message;
     const messageType    = Object.keys(messageContent || {})[0];
     
-    const content = _extractMessageContent(messageContent, messageType);
-    
-    // Prepare data to send
-    const chatMessage = {
-        msgId: msgId,
-        from:from,
-        to:to,
-        sender:sender,
-        isGroup:isGroup,
-        timestamp:timestamp,
-        sent: false,
-        type: messageType,
-        message: content
-    };
-    
-    // Store in MongoDB using database helper
     try {
-        await createUsers(data);
-        await saveChat(chatMessage);
-    } catch (err) {
-        console.error("❌ Failed to store message and users in database:", err.message);
-    }
-    
-    // Send to webhook
-    try {
-        if (this.webhookUrl) {
-            await axios.post(this.webhookUrl, chatMessage);
+        const content = await Utils.extractMessageContents(messageContent, messageType);
+        console.log(`Message extracted:`, {type: messageType, hasFilePath: !!content.filePath});
+        
+        // Prepare data to send
+        const chatMessage = {
+            msgId: msgId,
+            from: from,
+            to: to,
+            sender: sender,
+            isGroup: isGroup,
+            timestamp: timestamp,
+            sent: false,
+            type: messageType,
+            message: content
+        };
+        
+        // Store in MongoDB using database helper
+        try {
+            await createUsers(data);
+            await saveChat(chatMessage);
+        } catch (err) {
+            console.error("❌ Failed to store message and users in database:", err.message);
         }
-    } catch (err) {
-        console.error("❌ Webhook failed:", err.message);
+        
+        // Send to webhook
+        try {
+            if (this.webhookUrl) {
+                await axios.post(this.webhookUrl, chatMessage);
+            }
+        } catch (err) {
+            console.error("❌ Webhook failed:", err.message);
+        }
+    } catch (error) {
+        console.error("❌ Failed to process message:", error);
     }
 }
 
-const _extractMessageContent = (messageContent, messageType) => {
-    switch (messageType) {
-        case "conversation":
-        return messageContent.conversation;
-        
-        case "extendedTextMessage":
-        return messageContent.extendedTextMessage?.text || "";
-        
-        case "imageMessage":
-        return messageContent.imageMessage?.caption || "[Image]";
-        
-        case "videoMessage":
-        return messageContent.videoMessage?.caption || "[Video]";
-        
-        case "documentMessage":
-        return messageContent.documentMessage?.caption || "[Document]";
-        
-        case "audioMessage":
-        return "[Audio]";
-        
-        case "stickerMessage":
-        return "[Sticker]";
-        
-        case "buttonsResponseMessage":
-        return messageContent.buttonsResponseMessage?.selectedButtonId || "[Button Click]";
-        
-        case "listResponseMessage":
-        return messageContent.listResponseMessage?.singleSelectReply?.selectedRowId || "[List Selection]";
-        
-        case "messageContextInfo":
-        return "[Context Info]";
-        
-        default:
-        return `[Unsupported: ${messageType}]`;
-    }
-}
-
-const convertToTimeStamp = (messageTimestamp) => {
-    const date = new Date(messageTimestamp * 1000); 
-    return date.toISOString();
-}
 
 const createUsers = async (data) => {
     try {
         const msg = data.messages[0];
         const from = msg.key.remoteJid;
-        const isGroup = _isGroup(from);
+        const isGroup = Utils.isGroup(from);
         const sender = isGroup ? msg.key.participant : msg.key.remoteJid;
         
         if (isGroup) {
@@ -157,10 +122,6 @@ const createUsers = async (data) => {
     } catch (error) {
         console.error("Error in createUsers:", error.message);
     }
-}
-
-const _isGroup = (from) => {
-    return from.endsWith("@g.us");
 }
 
 const getAndSaveProfilePic = async (jid) => {

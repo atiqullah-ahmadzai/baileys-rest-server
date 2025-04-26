@@ -1,6 +1,15 @@
-# Express API Boilerplate
+# Baileys REST Server
 
-A simple Express.js API boilerplate with authentication, middleware, controllers, and helpers.
+A REST API server for WhatsApp based on Baileys library.
+
+## Disclaimer
+
+- This is NOT an official API from WhatsApp
+- Use at your own risk
+- Messages and media files are stored unencrypted in MongoDB and file storage, use at your own risk
+- Do not use for spamming
+
+This project is powered by the [Baileys](https://github.com/WhiskeySockets/Baileys) library. Special thanks to the WhiskeySockets team for their amazing work.
 
 ## Features
 
@@ -9,7 +18,12 @@ A simple Express.js API boilerplate with authentication, middleware, controllers
 - API middleware for authentication
 - Standardized response format
 - Basic error handling
-- Sample API endpoints (users)
+- Send messages to individuals
+- Send messages to groups
+- Read Audio, Image and Document messages
+- Webhook integration
+- MongoDB storage
+- RESTful API endpoints
 
 ## Getting Started
 
@@ -17,6 +31,7 @@ A simple Express.js API boilerplate with authentication, middleware, controllers
 
 - Node.js (v14+)
 - npm or yarn
+- MongoDB
 
 ### Installation
 
@@ -29,32 +44,38 @@ A simple Express.js API boilerplate with authentication, middleware, controllers
    ```
    cp .env.example .env
    ```
-4. Start the development server:
+4. Configure MongoDB connection and other settings in your .env file
+5. Start the development server:
    ```
    npm run dev
    ```
+
+## Setup Guide
+
+1. Configure your MongoDB connection string in the .env file
+2. Set up authentication credentials
+3. Start the server and scan the QR code to connect your WhatsApp account
+4. Configure webhook URL for receiving message notifications (optional)
+5. Use the API endpoints to interact with WhatsApp
 
 ## API Authentication
 
 This API uses Basic Authentication with a username and password defined in environment variables.
 
 Example request:
-```
-curl -X GET \
-  http://localhost:3000/api/users \
-  -H 'Authorization: Basic YWRtaW46c2VjcmV0' \
-  -H 'Content-Type: application/json'
-```
 
-The default credentials are:
-- Username: admin
-- Password: secret
+## API Documentation
 
-## API Endpoints
+For detailed API documentation with all available endpoints and request/response formats, please refer to our Postman collection:
 
-- `GET /api/health` - Health check (public)
-- `GET /api/users` - Get all users (protected)
-- `GET /api/users/:id` - Get user by ID (protected)
-- `POST /api/users` - Create user (protected)
-- `PUT /api/users/:id` - Update user (protected)
-- `DELETE /api/users/:id` - Delete user (protected)
+[Baileys REST API Documentation](https://documenter.getpostman.com/view/15333671/2sB2j1gCPJ)
+
+The collection includes examples for:
+- Managing sessions
+- Sending different types of messages (text, media, buttons, etc.)
+- Group management
+- Contact operations
+- Status updates
+- Webhook configurations
+
+All API requests require authentication as specified in the API Authentication section above.

@@ -32,6 +32,9 @@ app.use((err, req, res, next) => {
 	});
 });
 
+// allow data folder to be accessed from outside the container
+app.use('/data', express.static('data'));
+
 // 404 handler
 app.use((req, res) => {
 	res.status(404).json({
