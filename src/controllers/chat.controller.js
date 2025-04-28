@@ -2,6 +2,9 @@ const WhatsAppHelper = require('../helpers/whatsapp.helper');
 const { createResponse } = require('../helpers/response.helper');
 const {getUserChats, saveChat} = require('../helpers/database.helper');
 const Utils = require('../helpers/utils.helper');
+const {validateSendMessage} = require('../validators/chat.validator');
+const fs = require('fs');
+const {handleMessage} = require('../helpers/webhook.helper');
 
 const getChats = async (req, res) => {
     const { jid, limit } = req.body;
@@ -17,29 +20,57 @@ const getChats = async (req, res) => {
 }
 
 const sendMessage = async (req, res) => {
-    const { jid, message } = req.body;
-    if (!jid || !message) {
-        return createResponse(res, 400, 'JID and message are required');
+    const file = req.file;
+    const { jid, message, type } = req.body;
+
+    const validation = validateSendMessage(req.body, file);
+    if (!validation.valid) {
+        return createResponse(res, 400, validation.error);
     }
+
     try {
-        const response = await WhatsAppHelper.sendMessage(jid, message);
-        const userJid  = await WhatsAppHelper.getJid()
-        const sender   = Utils.cleanJid(userJid);
+        let response = {};
+        const user = await WhatsAppHelper.sock.user;
+        if (type === 'conversation') {
+            response = await WhatsAppHelper.sock.sendMessage(jid, { text: message });
+        } else if (type === 'image') {
+            response = await WhatsAppHelper.sock.sendMessage(jid, {
+                image: file.buffer,
+                caption: message || '',
+                mimetype: file.mimetype
+            });
+        }
+        
+        // Format the response to the required structure before passing to handleMessage
+        const newKey = Object.assign({}, response.key, { participant: Utils.cleanJid(await WhatsAppHelper.getJid()) });
+        let newMessage = {"conversation":message};
 
-        chatPayload = {
-            msgId: response.key.id,
-            from: sender,
-            to: jid,
-            sender: sender,
-            message: message,
-            sent: true,
-            isGroup: false,
-            type: 'conversation',
-            timestamp: new Date(),
+        if (type === 'image') {
+            newMessage = {
+                imageMessage: {
+                    url: response.imageMessage.url,
+                    caption: message || '',
+                    mimetype: file.mimetype,
+                    fileLength: file.size,
+                    fileName: file.originalname
+                }
+            };
+        }
+        const formattedResponse = {
+            messages: [
+                {
+                    key: newKey,
+                    messageTimestamp: response.messageTimestamp || Math.floor(Date.now() / 1000),
+                    pushName: user.name || 'Unknown',
+                    broadcast: false,
+                    message: newMessage
+                }
+            ],
+            type: 'notify'
         };
-        const chat = await saveChat(chatPayload);
-
-        return createResponse(res, 200, 'Message sent successfully', response);
+        
+        handleMessage(formattedResponse, true);
+        return createResponse(res, 200, 'Message sent successfully', formattedResponse);
     } catch (error) {
         return createResponse(res, 500, 'Failed to send message', error.message);
     }

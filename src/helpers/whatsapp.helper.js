@@ -89,6 +89,7 @@ class BayleysClass {
         }
         
         try {
+
             return await this.sock.sendMessage(jid, { text });
         } catch (error) {
             //console.error("Failed to send message:", error);

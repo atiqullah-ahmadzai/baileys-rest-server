@@ -4,20 +4,27 @@ const WhatsAppHelper = require('./whatsapp.helper');
 const { downloadAndSaveProfilePicture } = require('./data.helper');
 const Utils = require('./utils.helper');
 
-const handleMessage = async (data) => {
-    //console.dir(data, { depth: null });
+const handleMessage = async (data, sent=false) => {
+    console.dir(data, { depth: null });
     const { messages, type } = data;
     if (!messages || type !== "notify") return;
     const msg  = messages[0];
-    if (!msg.message || msg.key.fromMe) return; // Skip messages sent by self
-    
+    if (!msg.message) return; // Skip messages sent by self
+    //console.log("Message received:", msg);
 
     const isGroup   = Utils.isGroup(msg.key.remoteJid);
-    const from      = isGroup ? msg.key.participant : msg.key.remoteJid;
-    const to        = isGroup ? msg.key.remoteJid : Utils.cleanJid(await WhatsAppHelper.getJid());
-    const sender    = isGroup ? msg.key.participant : msg.key.remoteJid;
+    let from      = isGroup ? msg.key.participant : msg.key.remoteJid;
+    let to        = isGroup ? msg.key.remoteJid : Utils.cleanJid(await WhatsAppHelper.getJid());
+    let sender    = isGroup ? msg.key.participant : msg.key.remoteJid;
     const timestamp = Utils.convertToTimeStamp(msg.messageTimestamp);
     const msgId     = msg.key.id;
+
+    if (sent)
+    {
+        from  = Utils.cleanJid(await WhatsAppHelper.getJid());
+        to    = msg.key.remoteJid;
+        sender = Utils.cleanJid(await WhatsAppHelper.getJid());
+    }
     
     const messageContent = msg.message;
     const messageType    = Object.keys(messageContent || {})[0];
@@ -34,7 +41,7 @@ const handleMessage = async (data) => {
             sender: sender,
             isGroup: isGroup,
             timestamp: timestamp,
-            sent: false,
+            sent: sent,
             type: messageType,
             message: content
         };

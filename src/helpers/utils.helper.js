@@ -23,7 +23,8 @@ class UtilsHelper {
             filePath: null,
             mimetype: null,
             fileName: null,
-            fileLength: null
+            fileLength: null,
+            replyMsgId: null,
         };
         
         switch (messageType) {
@@ -36,7 +37,8 @@ class UtilsHelper {
             case "extendedTextMessage":
                 return {
                     ...baseResult,
-                    content: messageContent.extendedTextMessage?.text || ""
+                    content: messageContent.extendedTextMessage?.text || "",
+                    replyMsgId: messageContent.extendedTextMessage?.contextInfo?.stanzaId || "",
                 };
             
             case "imageMessage": {

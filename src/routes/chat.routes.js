@@ -6,6 +6,6 @@ const upload = multer();
 
 
 router.post('/',upload.none(), chatController.getChats);
-router.post('/send',upload.none(), chatController.sendMessage);
+router.post('/send',upload.single('file'), chatController.sendMessage);
 
 module.exports = router;
